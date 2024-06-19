@@ -32,7 +32,6 @@ public class Factory {
 
         List<Car> cars = new ArrayList<Car>(count * harbors.size());
         for(var harbor : harbors) {
-
             for(int i =0; i<count; i++) {
                 Car car = new Car(harbor);
                 cars.add(car);

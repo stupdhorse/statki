@@ -16,7 +16,6 @@ public class Car extends Thread {
     Boat boat;
 
     void boardAction(Boat boat) {
-
         try {
             boat.semaphore.acquire();
         } catch (InterruptedException e) {
@@ -40,7 +39,6 @@ public class Car extends Thread {
 
     }
 
-
     public void getOnBoard(Boat boat) {
         this.boat = boat;
 
@@ -53,7 +51,7 @@ public class Car extends Thread {
         checkForBoatStatus(boat, BoatStatus.Releasing);
         boat.semaphore.release();
         boat.boardingLock.lock();
-        // tutaj czas wjazdu samochodu
+        // tutaj czas zjazdu samochodu
         try {
             sleep(100);
         }catch (InterruptedException e) {
@@ -91,7 +89,6 @@ public class Car extends Thread {
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
-
 
         getOnBoard(harbor.currentBoat);
         getFromBoard(boat);

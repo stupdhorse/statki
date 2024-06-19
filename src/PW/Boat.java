@@ -130,27 +130,13 @@ public class Boat extends Thread {
 
         harbor.currentBoat = this;
         harbor.semaphore.release(capacity_);
-        //REMOVE OLD CARS
         release_cars();
-        //czekamy na auta jak zjada
-
-
-
-
-        //ADD NEW CARS
         board_cars();
         status = BoatStatus.Moving;
-        try {
-            Thread.sleep(5000);
-        } catch(InterruptedException e) {
-            throw  new RuntimeException(e);
-        }
         System.out.println("PORT [" + harbor.Name + "] skonczyl zaladowywać statek [ " + getId()+ "]");
         harbor.currentBoat = null;
         status = BoatStatus.Moving;
         harbor.lock.unlock();
-
-
     }
 
     public void run() {
@@ -159,6 +145,4 @@ public class Boat extends Thread {
             arriveToHarbor();
         }
     }
-
-
 }
