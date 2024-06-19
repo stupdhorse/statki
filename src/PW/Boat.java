@@ -1,6 +1,7 @@
 package PW;
 
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Condition;
@@ -24,7 +25,8 @@ public class Boat extends Thread {
         destination = 1;
         semaphore = new Semaphore(capacity,true);
         status =  BoatStatus.Moving;
-        releasingBarrier = null;
+        //releasingBarrier = null;
+        countDownLatch = new CountDownLatch(capacity);
     }
 
     int capacity_;
@@ -35,11 +37,11 @@ public class Boat extends Thread {
     Semaphore semaphore;
     BoatStatus status;
 
-    CyclicBarrier releasingBarrier;
+    //CyclicBarrier releasingBarrier;
 
-    Lock lock = new ReentrantLock(true);
-    Condition condition = lock.newCondition();
-
+    final Lock lock = new ReentrantLock(true);
+    final Condition statusCondition = lock.newCondition();
+    final CountDownLatch countDownLatch;
     Harbor[] harbors = new Harbor[2];
 
     void resetDistance() {
@@ -58,33 +60,45 @@ public class Boat extends Thread {
         destination = 1 - destination;
     }
 
+    void update_status(BoatStatus newStatus) {
+        lock.lock();
+        try {
+            status = newStatus;
+            statusCondition.signalAll();
+        } finally {
+            lock.unlock();//interrupt or not, release lock
+        }
+    }
+
     void release_cars() {
         System.out.println("REALEASING");
-        status = BoatStatus.Releasing;
-        if(releasingBarrier == null) {return;}
+
+        update_status(BoatStatus.Releasing);
+
         try {
-            releasingBarrier.await();
+            sleep(2000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
-        } catch (BrokenBarrierException ignored) {
         }
+
+
+//        if(releasingBarrier == null) {return;}
+//        try {
+//            releasingBarrier.await();
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException(e);
+//        } catch (BrokenBarrierException ignored) {
+//        }
     }
 
     void board_cars() {
         System.out.println("BOARDING");
-        releasingBarrier = new CyclicBarrier(capacity_);
-        status = BoatStatus.Boarding;
-        condition.notifyAll();
-
+        update_status(BoatStatus.Boarding);
         try {
-            releasingBarrier.await();
+            countDownLatch.await();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
-        } catch (BrokenBarrierException ignored) {
         }
-
-        System.out.println("boarding finishde");
-        releasingBarrier = new CyclicBarrier(capacity_);
     }
 
 
@@ -99,7 +113,7 @@ public class Boat extends Thread {
         System.out.println("PORT [" + harbor.Name + "]zaczyna zaladowywać statek [ " + getId()+ "]");
 
         harbor.currentBoat = this;
-        harbor.semaphore.release();
+        harbor.semaphore.release(capacity_);
         //REMOVE OLD CARS
         release_cars();
         //czekamy na auta jak zjada

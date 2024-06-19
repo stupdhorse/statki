@@ -20,19 +20,7 @@ public class Car extends Thread {
     public void getOnBoard(Boat boat) {
         this.boat = boat;
 
-        boat.lock.lock();
-        try {
-            while (boat.status != BoatStatus.Boarding) {
-                boat.condition.await();
-            }
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } finally {
-            boat.lock.unlock();
-        }
-
-        System.out.println("AUTO WZIELO SEMAFOR");
-
+        checkForBoatStatus(boat, BoatStatus.Boarding);
 
         try {
             boat.semaphore.acquire();
@@ -40,36 +28,33 @@ public class Car extends Thread {
             throw new RuntimeException(e);
         }
 
-        System.out.println("AUTO WZIELO SEMAFOR");
+        boat.countDownLatch.countDown();
 
-        try {
-            boat.releasingBarrier.await();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } catch (BrokenBarrierException e) {
-            throw new RuntimeException(e);
-        }
-
-        System.out.println("Car got on board");
+        System.out.println("Car [" + getName()  + "] got on board");
 
     }
 
     public void getFromBoard(Boat boat) {
+        checkForBoatStatus(boat, BoatStatus.Releasing);
+        boat.semaphore.release();
 
+        System.out.println("Car [" + getName()  + "] got from board");
+
+
+        this.boat = null;
+    }
+
+    private void checkForBoatStatus(Boat boat, BoatStatus status) {
         boat.lock.lock();
         try {
-            while (boat.status != BoatStatus.Releasing) {
-                boat.condition.await();
+            while (boat.status != status) {
+                boat.statusCondition.await();
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
             boat.lock.unlock();
         }
-
-        boat.semaphore.release();
-
-        this.boat = null;
     }
 
     public void run() {
@@ -80,13 +65,8 @@ public class Car extends Thread {
             throw new RuntimeException(e);
         }
 
-        //przyjezdza statek
 
         getOnBoard(harbor.currentBoat);
         getFromBoard(boat);
-
-
-
-
     }
 }
