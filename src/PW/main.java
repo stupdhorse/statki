@@ -9,7 +9,7 @@ public class main {
     public static void main(String[] args) {
 
         int N = 1;
-        int cars_count = 100;
+        int cars_count = 10;
 
         Harbor harborA = new Harbor("Lukow");
         Harbor harborB = new Harbor("LODZ");

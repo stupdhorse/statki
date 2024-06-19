@@ -1,6 +1,7 @@
 package PW;
 
 import java.util.List;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.locks.Condition;
 
 public class Car extends Thread {
@@ -30,11 +31,26 @@ public class Car extends Thread {
             boat.lock.unlock();
         }
 
+        System.out.println("AUTO WZIELO SEMAFOR");
+
+
         try {
             boat.semaphore.acquire();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
+        System.out.println("AUTO WZIELO SEMAFOR");
+
+        try {
+            boat.releasingBarrier.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (BrokenBarrierException e) {
+            throw new RuntimeException(e);
+        }
+
+        System.out.println("Car got on board");
 
     }
 

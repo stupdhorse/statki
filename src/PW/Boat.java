@@ -59,6 +59,7 @@ public class Boat extends Thread {
     }
 
     void release_cars() {
+        System.out.println("REALEASING");
         status = BoatStatus.Releasing;
         if(releasingBarrier == null) {return;}
         try {
@@ -70,8 +71,10 @@ public class Boat extends Thread {
     }
 
     void board_cars() {
+        System.out.println("BOARDING");
         releasingBarrier = new CyclicBarrier(capacity_);
         status = BoatStatus.Boarding;
+        condition.notifyAll();
 
         try {
             releasingBarrier.await();
@@ -79,6 +82,8 @@ public class Boat extends Thread {
             throw new RuntimeException(e);
         } catch (BrokenBarrierException ignored) {
         }
+
+        System.out.println("boarding finishde");
         releasingBarrier = new CyclicBarrier(capacity_);
     }
 
