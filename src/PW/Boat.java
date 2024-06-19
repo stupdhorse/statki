@@ -1,5 +1,7 @@
 package PW;
 
+import java.time.LocalDate;
+import java.util.Date;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -15,6 +17,7 @@ enum BoatStatus {
     Moving,
 }
 
+
 public class Boat extends Thread {
     public Boat(int capacity,Harbor harborA, Harbor harborB) {
         capacity_ = capacity;
@@ -25,23 +28,28 @@ public class Boat extends Thread {
         destination = 1;
         semaphore = new Semaphore(capacity,true);
         status =  BoatStatus.Moving;
-        //releasingBarrier = null;
-        countDownLatch = new CountDownLatch(capacity);
+        boardingBarrier = new CyclicBarrier(capacity);
+        currentCapacity = 0;
     }
 
+    private static final int WAIT_TIME_MS = 10_000;
     int capacity_;
     int distance_;
     int velocity_;
     int destination;
-    //TimedSemaphore boardingSemaphore = new Semaphore(capacity_);
     Semaphore semaphore;
     BoatStatus status;
 
-    //CyclicBarrier releasingBarrier;
+    final CyclicBarrier boardingBarrier;
+
+    int currentCapacity;
+    final Lock capacityLock = new ReentrantLock(true);
+    final Condition capacityCondition = capacityLock.newCondition();
+
+    final Lock boardingLock = new ReentrantLock(true);
 
     final Lock lock = new ReentrantLock(true);
     final Condition statusCondition = lock.newCondition();
-    final CountDownLatch countDownLatch;
     Harbor[] harbors = new Harbor[2];
 
     void resetDistance() {
@@ -91,18 +99,26 @@ public class Boat extends Thread {
 //        }
     }
 
-    void board_cars() {
-        System.out.println("BOARDING");
-        update_status(BoatStatus.Boarding);
-        try {
-            countDownLatch.await();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+    void wait_for_boarding_cars() {
+        capacityLock.lock();
+        while (currentCapacity != capacity_) {
+            Date deadline = new Date(System.currentTimeMillis() + WAIT_TIME_MS);
+            try {
+                capacityCondition.awaitUntil(deadline);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            } finally {
+                capacityLock.unlock();
+            }
         }
     }
 
+    void board_cars() {
+        System.out.println("BOARDING");
+        update_status(BoatStatus.Boarding);
+        wait_for_boarding_cars();
 
-
+    }
 
     void arriveToHarbor() {
         Harbor harbor = harbors[destination];

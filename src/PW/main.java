@@ -8,7 +8,7 @@ import java.util.List;
 public class main {
     public static void main(String[] args) {
 
-        int N = 1;
+        int N = 5;
         int cars_count = 10;
 
         Harbor harborA = new Harbor("LUKOW");
