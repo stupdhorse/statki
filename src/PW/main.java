@@ -8,8 +8,8 @@ import java.util.List;
 public class main {
     public static void main(String[] args) {
 
-        int N = 5;
-        int cars_count = 10;
+        int N = 2;
+        int cars_count = 20;
 
         Harbor harborA = new Harbor("LUKOW");
         Harbor harborB = new Harbor("LODZ");

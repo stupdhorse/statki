@@ -28,7 +28,6 @@ public class Boat extends Thread {
         destination = 1;
         semaphore = new Semaphore(capacity,true);
         status =  BoatStatus.Moving;
-        boardingBarrier = new CyclicBarrier(capacity);
         currentCapacity = 0;
     }
 
@@ -39,8 +38,6 @@ public class Boat extends Thread {
     int destination;
     Semaphore semaphore;
     BoatStatus status;
-
-    final CyclicBarrier boardingBarrier;
 
     int currentCapacity;
     final Lock capacityLock = new ReentrantLock(true);
@@ -79,7 +76,7 @@ public class Boat extends Thread {
     }
 
     void release_cars() {
-        System.out.println("REALEASING");
+        System.out.println("REALEASING [" +  getName() + "]");
 
         update_status(BoatStatus.Releasing);
 
@@ -88,52 +85,48 @@ public class Boat extends Thread {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-
-
-//        if(releasingBarrier == null) {return;}
-//        try {
-//            releasingBarrier.await();
-//        } catch (InterruptedException e) {
-//            throw new RuntimeException(e);
-//        } catch (BrokenBarrierException ignored) {
-//        }
     }
 
     void wait_for_boarding_cars() {
-        capacityLock.lock();
-        while (currentCapacity != capacity_) {
-            Date deadline = new Date(System.currentTimeMillis() + WAIT_TIME_MS);
-            try {
-                capacityCondition.awaitUntil(deadline);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            } finally {
-                capacityLock.unlock();
+
+        while(currentCapacity == 0) {
+            capacityLock.lock();
+            while (currentCapacity != capacity_) {
+                Date deadline = new Date(System.currentTimeMillis() + WAIT_TIME_MS);
+                try {
+                    if (!capacityCondition.awaitUntil(deadline)) {
+                         if(currentCapacity == 0) System.out.println("STATEK [" + getName() + "] znowu zaczyna czekac");
+                         capacityLock.lock();
+                    }
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                } finally {
+                    capacityLock.unlock();
+                }
             }
         }
     }
 
     void board_cars() {
-        System.out.println("BOARDING");
+        System.out.println("BOARDING [" + getName() + "]");
         update_status(BoatStatus.Boarding);
         wait_for_boarding_cars();
-
     }
 
     void arriveToHarbor() {
         Harbor harbor = harbors[destination];
-        System.out.println("statek [ " + getId() + "] doplynal do  portu " + harbor.Name);
+        System.out.println("statek [ " + getName() + "] doplynal do  portu " + harbor.Name);
         status =  BoatStatus.Waiting;
 
         harbor.lock.lock();
-        System.out.println("PORT [" + harbor.Name + "]zaczyna zaladowywać statek [ " + getId()+ "]");
+        System.out.println("PORT [" + harbor.Name + "]zaczyna zaladowywać statek [ " + getName()+ "]");
 
         harbor.currentBoat = this;
         harbor.semaphore.release(capacity_);
         release_cars();
         board_cars();
         status = BoatStatus.Moving;
-        System.out.println("PORT [" + harbor.Name + "] skonczyl zaladowywać statek [ " + getId()+ "]");
+        System.out.println("PORT [" + harbor.Name + "] skonczyl zaladowywać statek [ " + getName()+ "]");
         harbor.currentBoat = null;
         status = BoatStatus.Moving;
         harbor.lock.unlock();

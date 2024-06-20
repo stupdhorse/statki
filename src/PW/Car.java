@@ -44,12 +44,11 @@ public class Car extends Thread {
 
         checkForBoatStatus(boat, BoatStatus.Boarding);
         boardAction(boat);
-        System.out.println("Car [" + getName()  + "] got on board");
+        System.out.println("Car [" + getName()  + "] got on board " + "[" + boat.getName() + "]" );
     }
 
     public void getFromBoard(Boat boat) {
         checkForBoatStatus(boat, BoatStatus.Releasing);
-        boat.semaphore.release();
         boat.boardingLock.lock();
         // tutaj czas zjazdu samochodu
         try {
@@ -63,9 +62,9 @@ public class Car extends Thread {
         boat.capacityLock.unlock();
         boat.boardingLock.unlock();
 
-        System.out.println("Car [" + getName()  + "] got from board");
+        boat.semaphore.release();
 
-
+        System.out.println("Car [" + getName()  + "] got from board " + "[" + boat.getName() + "]");
         this.boat = null;
     }
 

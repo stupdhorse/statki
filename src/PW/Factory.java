@@ -9,7 +9,7 @@ public class Factory {
         List<Boat> boats = new ArrayList<Boat>(count);
 
         for(int i=0; i<count;i++){
-            Boat boat = new Boat(4, harborA, harborB);
+            Boat boat = new Boat(10, harborA, harborB);
             boats.add(boat);
         }
 
